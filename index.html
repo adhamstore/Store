@@ -174,7 +174,6 @@
 </head>
 <body>
     <div class="controls">
-        <input type="file" id="fileInput" accept=".xlsx">
         <input type="text" id="search" class="search-box" placeholder="Search for an item...">
     </div>
     
@@ -189,21 +188,28 @@
 
     <script>
         let items = [];
+		const sheetURL = "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/gviz/tq?tqx=out:json";
 
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                items = sheet;
-            };
-            reader.readAsArrayBuffer(file);
-        });
+async function fetchGoogleSheetData() {
+    try {
+        const response = await fetch(sheetURL);
+        const text = await response.text();
+        const json = JSON.parse(text.substring(47, text.length - 2)); // Remove unnecessary text from Google Sheets response
+        const rows = json.table.rows;
+
+        items = rows.map(row => ({
+            "item name": row.c[0]?.v || "",
+            "serial number": row.c[1]?.v || "",
+            "number in the storage": row.c[2]?.v || "",
+            "image": row.c[3]?.v || ""
+        }));
+    } catch (error) {
+        console.error("Error fetching Google Sheets data:", error);
+    }
+}
+
+// Call the function to fetch data on page load
+fetchGoogleSheetData();
 
         document.getElementById('search').addEventListener('input', function() {
             const query = this.value.toLowerCase();
