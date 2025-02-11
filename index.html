@@ -1,11 +1,256 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Page</title>
+    <title>Login</title>
+    <script>
+        // Blocking password prompt before rendering anything
+        let password;
+        while (password !== "Adham_2025") {
+            password = prompt("Enter password:");
+            if (password === null) {
+                document.body.innerHTML = "<div style='color: red; text-align: center; font-size: 24px;'>Access Denied</div>";
+                throw new Error("Access Denied");
+            }
+            if (password !== "Adham_2025") {
+                alert("Incorrect password. Try again.");
+            }
+        }
+    </script>
+</head>
+</html>
+
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Search</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            position: fixed;
+            top: 0;
+            width: 50%;
+            background: #ffffff;
+            padding: 6px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-radius: 10px;
+        }
+
+        input[type="file"], .search-box {
+            width: 80%;
+            padding: 8px;
+            font-size: 16px;
+            border: 2px solid #888;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .container {
+            width: 90%;
+            margin-top: 90px;
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+
+        .item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 20px;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            width: 100%;
+            min-height: 130px;
+        }
+
+        .item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .item img {
+            width: 220px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-left: 20px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .item img:hover {
+            transform: scale(1.05);
+            border-color: #007bff;
+        }
+
+        .item div {
+            flex: 1;
+            text-align: left;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            white-space: normal;
+            max-width: 65%;
+        }
+
+        .item strong {
+            color: #333;
+            font-size: 22px;
+            display: block;
+        }
+
+        .item div span {
+            display: block;
+            color: #555;
+            font-size: 16px;
+        }
+
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .image-modal img {
+            width: 80%;
+            height: auto;
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.2);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.7);
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
+    <div class="controls">
+        <input type="file" id="fileInput" accept=".xlsx">
+        <input type="text" id="search" class="search-box" placeholder="Search for an item...">
+    </div>
+    
+    <div class="container">
+        <ul id="results" class="item-list"></ul>
+    </div>
+
+    <div class="image-modal" id="imageModal" onclick="closeModal()">
+        <span class="close-btn" onclick="closeModal(event)">X</span>
+        <img id="modalImage" src="" alt="Zoomed Image">
+    </div>
+
+    <script>
+        let items = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                items = sheet;
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('search').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+            
+            const filteredItems = items.filter(item => item['item name'].toLowerCase().includes(query));
+            
+            filteredItems.forEach(item => {
+                const li = document.createElement('li');
+                li.classList.add('item');
+                
+                li.innerHTML = `
+                    <div>
+                        <strong>${item['item name']}</strong>
+                        <span>Serial: ${item['serial number']}</span>
+                        <span>In Storage: ${item['number in the storage']}</span>
+                    </div>
+                    <img src="${item['image']}" alt="Item Image" onclick="openModal('${item['image']}')">
+                `;
+                
+                resultsContainer.appendChild(li);
+            });
+        });
+		
+		 function openModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        modalImage.src = imageSrc;
+        modal.style.display = 'flex';
+    }
+
+    function closeModal(event) {
+        const modal = document.getElementById('imageModal');
+        if (!event || event.target === modal || event.target.classList.contains('close-btn')) {
+            modal.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            closeModal();
+        }
+    });
+
+    document.getElementById('imageModal').addEventListener('click', closeModal);
+
+    </script>
 </body>
 </html>
