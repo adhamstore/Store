@@ -6,217 +6,86 @@
     <title>Item Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js"></script>
-
-    <style>
-        body { 
-            font-family: 'Arial', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .controls {
-            position: fixed;
-            top: 0;
-            width: 50%;
-            background: #ffffff;
-            padding: 6px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            border-radius: 10px;
-        }
-
-        input[type="text"] {
-            width: 80%;
-            padding: 8px;
-            font-size: 16px;
-            border: 2px solid #888;
-            border-radius: 6px;
-            margin-bottom: 4px;
-        }
-
-        .container {
-            width: 90%;
-            margin-top: 90px;
-        }
-
-        .item-list {
-            list-style: none;
-            padding: 0;
-            width: 100%;
-        }
-
-        .item {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            background: white;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            font-size: 20px;
-            width: 100%;
-            min-height: 130px;
-        }
-
-        .item img {
-            width: 220px;
-            height: 180px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-left: 20px;
-            border: 2px solid #ddd;
-            cursor: pointer;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .item img:hover {
-            transform: scale(1.05);
-            border-color: #007bff;
-        }
-
-        .image-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        .image-modal img {
-            width: 80%;
-            height: auto;
-            max-width: 90vw;
-            max-height: 90vh;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.2);
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 25px;
-            font-size: 30px;
-            color: white;
-            cursor: pointer;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-
-        .close-btn:hover {
-            background: rgba(255, 0, 0, 0.7);
-        }
-    </style>
-</head>
-<body>
-    <div class="controls">
-        <input type="text" id="search" class="search-box" placeholder="Search for an item...">
-    </div>
-    
-    <div class="container">
-        <ul id="results" class="item-list"></ul>
-    </div>
-
-    <div class="image-modal" id="imageModal" onclick="closeModal()">
-        <span class="close-btn" onclick="closeModal(event)">X</span>
-        <img id="modalImage" src="" alt="Zoomed Image">
-    </div>
-
-    <script>
-        // Firebase configuration (Replace with your actual credentials)
+    <!-- Firebase SDK (Modular v9+) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        
+        // Firebase configuration
         const firebaseConfig = {
-           apiKey: "AIzaSyAeNnTbvHUCYCxJU2BOxU_kwfSbg-564FE",
-  authDomain: "store-fdde6.firebaseapp.com",
-  projectId: "store-fdde6",
-  storageBucket: "store-fdde6.firebasestorage.app",
-  messagingSenderId: "89613962927",
-  appId: "1:89613962927:web:5646e8be819cc88ca28e5a",
-  measurementId: "G-25Y158ELFL"
+            apiKey: "AIzaSyAeNnTbv...",
+            authDomain: "store-fdde6.firebaseapp.com",
+            projectId: "store-fdde6",
+            storageBucket: "store-fdde6.appspot.com",
+            messagingSenderId: "89613962927",
+            appId: "1:89613962927:web:5646e8be819cc88ca28e5a",
+            measurementId: "G-25Y158ELFL"
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         let items = [];
 
-async function fetchFirestoreData() {
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
+        async function fetchFirestoreData() {
+            console.log("Fetching Firestore data...");
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "items"));
+                items = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name || "Unnamed Item",
+                    serial: doc.data().serial || "Unknown Serial",
+                    stock: doc.data().stock || 0,
+                    image: doc.data().image || ""
+                }));
+                renderItems(items);
+            } catch (error) {
+                console.error("Error fetching Firestore data:", error);
+            }
+        }
 
-    const snapshot = await db.collection("items").get();
-    items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,   // ✅ Correct field name
-        serial: doc.data().serial,   // ✅ Correct field name
-        stock: doc.data().stock,   // ✅ Correct field name (number)
-        image: doc.data().image    // ✅ Correct field name (URL)
-    }));
+        function renderItems(filteredItems) {
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
 
-    renderItems(items);
-}
+            filteredItems.forEach(item => {
+                const li = document.createElement('li');
+                li.classList.add('item');
+                li.innerHTML = `
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <span>Serial: ${item.serial}</span><br>
+                        <span>In Storage: ${item.stock}</span>
+                    </div>
+                    <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
+                `;
+                resultsContainer.appendChild(li);
+            });
+        }
 
-function renderItems(filteredItems) {
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const filteredItems = items.filter(item => item.name.toLowerCase().includes(query));
+            renderItems(filteredItems);
+        });
 
-    filteredItems.forEach(item => {
-        const li = document.createElement('li');
-        li.classList.add('item');
-
-        li.innerHTML = `
-            <div>
-                <strong>${item.name}</strong>
-                <br>
-                <span>Serial: ${item.serial}</span>
-                <br>
-                <span>In Storage: ${item.stock}</span>
-            </div>
-            <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
-        `;
-
-        resultsContainer.appendChild(li);
-    });
-}
-
-
-       document.getElementById('search').addEventListener('input', function () {
-    const query = this.value.toLowerCase();
-    const filteredItems = items.filter(item => item.name.toLowerCase().includes(query)); // ✅ Fix field name
-    renderItems(filteredItems);
-});
-
-
-        function openModal(imageSrc) {
+        window.openModal = function(imageSrc) {
             const modal = document.getElementById('imageModal');
             const modalImage = document.getElementById('modalImage');
             modalImage.src = imageSrc;
             modal.style.display = 'flex';
-        }
+        };
 
-        function closeModal(event) {
+        window.closeModal = function(event) {
             const modal = document.getElementById('imageModal');
             if (!event || event.target === modal || event.target.classList.contains('close-btn')) {
                 modal.style.display = 'none';
             }
-        }
+        };
 
         document.addEventListener('keydown', function (event) {
             if (event.key === "Escape") {
@@ -229,5 +98,32 @@ function renderItems(filteredItems) {
         // Fetch data from Firestore on load
         fetchFirestoreData();
     </script>
+
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .controls { position: fixed; top: 0; width: 50%; background: #ffffff; padding: 6px 0; display: flex; flex-direction: column; align-items: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; }
+        input[type="text"] { width: 80%; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; margin-bottom: 4px; }
+        .container { width: 90%; margin-top: 90px; }
+        .item-list { list-style: none; padding: 0; width: 100%; }
+        .item { display: flex; align-items: flex-start; justify-content: space-between; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); font-size: 20px; width: 100%; min-height: 130px; }
+        .item img { width: 220px; height: 180px; object-fit: cover; border-radius: 8px; margin-left: 20px; border: 2px solid #ddd; cursor: pointer; transition: transform 0.3s ease-in-out; }
+        .item img:hover { transform: scale(1.05); border-color: #007bff; }
+        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); justify-content: center; align-items: center; z-index: 2000; }
+        .image-modal img { width: 80%; height: auto; max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+        .close-btn { position: absolute; top: 15px; right: 25px; font-size: 30px; color: white; cursor: pointer; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; }
+        .close-btn:hover { background: rgba(255, 0, 0, 0.7); }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <input type="text" id="search" placeholder="Search for an item...">
+    </div>
+    <div class="container">
+        <ul id="results" class="item-list"></ul>
+    </div>
+    <div class="image-modal" id="imageModal">
+        <span class="close-btn" onclick="closeModal(event)">X</span>
+        <img id="modalImage" src="" alt="Zoomed Image">
+    </div>
 </body>
 </html>
