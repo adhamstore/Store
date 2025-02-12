@@ -157,48 +157,52 @@
 
         let items = [];
 
-        async function fetchFirestoreData() {
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
+async function fetchFirestoreData() {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
 
-            const snapshot = await db.collection("items").get();
-            items = snapshot.docs.map(doc => ({
-                id: doc.id,
-                "item name": doc.data().name,
-                "serial number": doc.data().serial,
-                "number in the storage": doc.data().stock,
-                "image": doc.data().image
-            }));
+    const snapshot = await db.collection("items").get();
+    items = snapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name,   // ✅ Correct field name
+        serial: doc.data().serial,   // ✅ Correct field name
+        stock: doc.data().stock,   // ✅ Correct field name (number)
+        image: doc.data().image    // ✅ Correct field name (URL)
+    }));
 
-            renderItems(items);
-        }
+    renderItems(items);
+}
 
-        function renderItems(filteredItems) {
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
+function renderItems(filteredItems) {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
 
-            filteredItems.forEach(item => {
-                const li = document.createElement('li');
-                li.classList.add('item');
+    filteredItems.forEach(item => {
+        const li = document.createElement('li');
+        li.classList.add('item');
 
-                li.innerHTML = `
-                    <div>
-                        <strong>${item['item name']}</strong>
-                        <span>Serial: ${item['serial number']}</span>
-                        <span>In Storage: ${item['number in the storage']}</span>
-                    </div>
-                    <img src="${item['image']}" alt="Item Image" onclick="openModal('${item['image']}')">
-                `;
+        li.innerHTML = `
+            <div>
+                <strong>${item.name}</strong>
+                <br>
+                <span>Serial: ${item.serial}</span>
+                <br>
+                <span>In Storage: ${item.stock}</span>
+            </div>
+            <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
+        `;
 
-                resultsContainer.appendChild(li);
-            });
-        }
+        resultsContainer.appendChild(li);
+    });
+}
 
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value.toLowerCase();
-            const filteredItems = items.filter(item => item['item name'].toLowerCase().includes(query));
-            renderItems(filteredItems);
-        });
+
+       document.getElementById('search').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const filteredItems = items.filter(item => item.name.toLowerCase().includes(query)); // ✅ Fix field name
+    renderItems(filteredItems);
+});
+
 
         function openModal(imageSrc) {
             const modal = document.getElementById('imageModal');
