@@ -191,51 +191,121 @@
 		const sheetURL = "https://docs.google.com/spreadsheets/d/1qc_-jNSdQ3kOzSGsBLxnX0LlJhpT5eHNRHtc_3jGwco/gviz/tq?tqx=out:json";
 
 
+const sheetId = "1qc_-jNSdQ3kOzSGsBLxnX0LlJhpT5eHNRHtc_3jGwco"; // Your Google Sheet ID
+const apiKey = "YOUR_GOOGLE_API_KEY"; // Replace with your API Key
+const baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A:D`; // Adjust sheet range if needed
+const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A:D?valueInputOption=RAW`;
+
+let items = [];
+
+// Fetch Data from Google Sheets
 async function fetchGoogleSheetData() {
     try {
-        const response = await fetch(sheetURL);
-        const text = await response.text();
-        const json = JSON.parse(text.substring(47, text.length - 2)); // Remove unnecessary text from Google Sheets response
-        const rows = json.table.rows;
+        const response = await fetch(`${baseUrl}?key=${apiKey}`);
+        const data = await response.json();
 
-        items = rows.map(row => ({
-            "item name": row.c[0]?.v || "",
-            "serial number": row.c[1]?.v || "",
-            "number in the storage": row.c[2]?.v || "",
-            "image": row.c[3]?.v || ""
-        }));
+        if (data.values) {
+            items = data.values.slice(1).map((row, index) => ({
+                id: index + 2, // Row index in the sheet (starts from 2)
+                name: row[0] || "",
+                serial: row[1] || "",
+                stock: row[2] || "",
+                image: row[3] || "",
+            }));
+            renderItems(items);
+        }
     } catch (error) {
         console.error("Error fetching Google Sheets data:", error);
     }
 }
 
-// Call the function to fetch data on page load
+// Render Search Results
+function renderItems(filteredItems) {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
+
+    filteredItems.forEach(item => {
+        const li = document.createElement('li');
+        li.classList.add('item');
+        li.innerHTML = `
+            <div>
+                <strong>${item.name}</strong>
+                <span>Serial: ${item.serial}</span>
+                <span>In Storage: ${item.stock}</span>
+                <button onclick="editItem(${item.id})">Edit</button>
+                <button onclick="deleteItem(${item.id})" style="color:red;">Delete</button>
+            </div>
+            <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
+        `;
+        resultsContainer.appendChild(li);
+    });
+}
+
+// Update Item in Google Sheets
+async function editItem(rowId) {
+    const item = items.find(i => i.id === rowId);
+    if (!item) return;
+
+    const newName = prompt("Edit Name:", item.name);
+    const newSerial = prompt("Edit Serial:", item.serial);
+    const newStock = prompt("Edit Stock:", item.stock);
+
+    if (newName !== null && newSerial !== null && newStock !== null) {
+        const updatedValues = [[newName, newSerial, newStock, item.image]];
+
+        try {
+            const response = await fetch(`${updateUrl}&range=Sheet1!A${rowId}:D${rowId}&key=${apiKey}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ values: updatedValues })
+            });
+
+            if (response.ok) {
+                alert("Item updated!");
+                fetchGoogleSheetData();
+            } else {
+                alert("Failed to update item.");
+            }
+        } catch (error) {
+            console.error("Update error:", error);
+        }
+    }
+}
+
+// Delete Item from Google Sheets
+async function deleteItem(rowId) {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+
+    try {
+        const emptyRow = [["", "", "", ""]];
+
+        const response = await fetch(`${updateUrl}&range=Sheet1!A${rowId}:D${rowId}&key=${apiKey}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ values: emptyRow })
+        });
+
+        if (response.ok) {
+            alert("Item deleted!");
+            fetchGoogleSheetData();
+        } else {
+            alert("Failed to delete item.");
+        }
+    } catch (error) {
+        console.error("Delete error:", error);
+    }
+}
+
+// Search Function
+document.getElementById('search').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const filteredItems = items.filter(item => item.name.toLowerCase().includes(query));
+    renderItems(filteredItems);
+});
+
+// Load Data on Page Start
 fetchGoogleSheetData();
 
-        document.getElementById('search').addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
-            
-            const filteredItems = items.filter(item => item['item name'].toLowerCase().includes(query));
-            
-            filteredItems.forEach(item => {
-                const li = document.createElement('li');
-                li.classList.add('item');
-                
-                li.innerHTML = `
-                    <div>
-                        <strong>${item['item name']}</strong>
-                        <span>Serial: ${item['serial number']}</span>
-                        <span>In Storage: ${item['number in the storage']}</span>
-                    </div>
-                    <img src="${item['image']}" alt="Item Image" onclick="openModal('${item['image']}')">
-                `;
-                
-                resultsContainer.appendChild(li);
-            });
-        });
-		
 		 function openModal(imageSrc) {
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
