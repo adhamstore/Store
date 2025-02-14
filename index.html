@@ -28,32 +28,35 @@
 
         let items = [];
 
-        async function fetchFirestoreData() {
-            console.log("Fetching Firestore data...");
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
-            
-            try {
-                const querySnapshot = await getDocs(collection(db, "items"));
-                items = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        name: data.name || "N/A",
-                        serial: data.serial || "N/A",
-                        stock: data.stock !== undefined ? data.stock : "N/A",
-                        image: data.image || "https://via.placeholder.com/150"
-                    };
-                });
+      async function fetchFirestoreData() {
+    console.log("Fetching Firestore data...");
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
 
-                // Sort items alphabetically by name or serial
-                items.sort((a, b) => a.name.localeCompare(b.name));
+    try {
+        const querySnapshot = await getDocs(collection(db, "items"));
+        items = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            console.log("Firestore Data:", data); // Debugging output
 
-                renderItems(items);
-            } catch (error) {
-                console.error("Error fetching Firestore data:", error);
-            }
-        }
+            return {
+                id: doc.id,
+                name: data.name || "N/A",  // Ensure name is correctly retrieved
+                serial: data.serial || "N/A",
+                stock: data.stock !== undefined ? data.stock : "N/A",
+                image: (data.image && data.image.startsWith("http")) ? data.image : "https://via.placeholder.com/150" // Check if URL is valid
+            };
+        });
+
+        // Sort items alphabetically
+        items.sort((a, b) => a.name.localeCompare(b.name));
+
+        renderItems(items);
+    } catch (error) {
+        console.error("Error fetching Firestore data:", error);
+    }
+}
+
 
         function renderItems(filteredItems) {
             const resultsContainer = document.getElementById('results');
