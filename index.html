@@ -6,12 +6,10 @@
     <title>Item Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase SDK (Modular v9+) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
         
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAeNnTbv...",
             authDomain: "store-fdde6.firebaseapp.com",
@@ -22,7 +20,6 @@
             measurementId: "G-25Y158ELFL"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -35,17 +32,10 @@
 
             try {
                 const querySnapshot = await getDocs(collection(db, "items"));
-                items = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        name: data.name || "N/A",
-                        serial: data.serial || "N/A",
-                        stock: data.stock !== undefined ? data.stock : "N/A",
-                        image: (data.image && data.image.startsWith("http")) ? data.image : "https://via.placeholder.com/150"
-                    };
-                });
-
+                items = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
                 items.sort((a, b) => a.name.localeCompare(b.name));
                 renderItems(items);
             } catch (error) {
@@ -62,9 +52,9 @@
                 li.classList.add('item');
                 li.innerHTML = `
                     <div class="item-info">
-                        <label>Name:</label> <input type="text" value="${item.name}" disabled id="name-${item.id}"><br>
-                        <label>Serial:</label> <input type="text" value="${item.serial}" disabled id="serial-${item.id}"><br>
-                        <label>In Storage:</label> <input type="text" value="${item.stock}" disabled id="stock-${item.id}">
+                        <label>Name:</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
+                        <label>Serial:</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
+                        <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
                     </div>
                     <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
                     <div class="actions">
@@ -110,55 +100,25 @@
             }
         };
 
-        window.openModal = function(imageSrc) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            modalImage.src = imageSrc;
-            modal.style.display = 'flex';
-        };
-
-        window.closeModal = function(event) {
-            const modal = document.getElementById('imageModal');
-            if (!event || event.target === modal || event.target.classList.contains('close-btn')) {
-                modal.style.display = 'none';
-            }
-        };
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === "Escape") {
-                closeModal();
-            }
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const filteredItems = items.filter(item => item.name.toLowerCase().includes(query));
+            renderItems(filteredItems);
         });
-
-        document.getElementById('imageModal').addEventListener('click', closeModal);
 
         fetchFirestoreData();
     </script>
-
+    
     <style>
-        .item-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .item-info label {
-            font-weight: bold;
-            display: inline-block;
-            width: 120px;
-            text-align: right;
-            margin-right: 10px;
-        }
-        .item-info input {
-            border: 1px solid #ccc;
-            padding: 5px;
-            margin-bottom: 5px;
-            width: 200px;
-        }
-        .actions { 
-            display: flex; 
-            flex-direction: row; 
-            gap: 5px; 
-        }
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .controls { width: 50%; background: #ffffff; padding: 6px; display: flex; flex-direction: column; align-items: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; }
+        input[type="text"] { width: 80%; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; margin-bottom: 4px; }
+        .container { width: 90%; margin-top: 20px; }
+        .item-list { list-style: none; padding: 0; width: 100%; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .item img { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; margin-left: 10px; cursor: pointer; transition: transform 0.3s ease-in-out; }
+        .item img:hover { transform: scale(1.05); border-color: #007bff; }
+        .actions { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
@@ -167,10 +127,6 @@
     </div>
     <div class="container">
         <ul id="results" class="item-list"></ul>
-    </div>
-    <div class="image-modal" id="imageModal">
-        <span class="close-btn" onclick="closeModal(event)">X</span>
-        <img id="modalImage" src="" alt="Zoomed Image">
     </div>
 </body>
 </html>
