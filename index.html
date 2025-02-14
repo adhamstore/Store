@@ -25,12 +25,28 @@
 
         let items = [];
  async function fetchLowStockCount() {
-            const querySnapshot = await getDocs(collection(db, "items"));
-            const lowStockItems = querySnapshot.docs.filter(doc => doc.data().stock < 10);
-            document.getElementById('lowStockCount').innerText = lowStockItems.length;
+            try {
+                const querySnapshot = await getDocs(collection(db, "items"));
+                const lowStockItems = querySnapshot.docs.filter(doc => Number(doc.data().stock) < 10);
+                document.getElementById('lowStockCount').innerText = lowStockItems.length;
+            } catch (error) {
+                console.error("Error fetching low stock count:", error);
+            }
         }
 
         document.addEventListener("DOMContentLoaded", fetchLowStockCount);
+
+        document.getElementById("addItemBtn").addEventListener("click", function() {
+            alert("Add Item Button Clicked - Implement form popup here");
+        });
+        
+        document.getElementById("addSheetBtn").addEventListener("click", function() {
+            alert("Add Sheet Button Clicked - Implement Excel file handling here");
+        });
+        
+        document.getElementById("lowStockBtn").addEventListener("click", function() {
+            alert("Low Stock Button Clicked - Implement filtering logic here");
+        });
         async function fetchFirestoreData() {
             console.log("Fetching Firestore data...");
             const resultsContainer = document.getElementById('results');
