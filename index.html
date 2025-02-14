@@ -11,108 +11,25 @@
     <title>Item Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyAeNnTbv...",
-            authDomain: "store-fdde6.firebaseapp.com",
-            projectId: "store-fdde6",
-            storageBucket: "store-fdde6.appspot.com",
-            messagingSenderId: "89613962927",
-            appId: "1:89613962927:web:5646e8be819cc88ca28e5a",
-            measurementId: "G-25Y158ELFL"
-        };
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyAeNnTbv...",
+        authDomain: "store-fdde6.firebaseapp.com",
+        projectId: "store-fdde6",
+        storageBucket: "store-fdde6.appspot.com",
+        messagingSenderId: "89613962927",
+        appId: "1:89613962927:web:5646e8be819cc88ca28e5a",
+        measurementId: "G-25Y158ELFL"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let items = [];
 
-        let items = [];
-
-        async function fetchFirestoreData() {
-            console.log("Fetching Firestore data...");
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
-
-            try {
-                const querySnapshot = await getDocs(collection(db, "items"));
-                items = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                items.sort((a, b) => a.name.localeCompare(b.name));
-                renderItems(items);
-            } catch (error) {
-                console.error("Error fetching Firestore data:", error);
-            }
-        }
-
-        function renderItems(filteredItems) {
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
-
-            filteredItems.forEach(item => {
-                const li = document.createElement('li');
-                li.classList.add('item');
-                li.innerHTML = `
-                    <div class="item-info">
-                        <label>Name:</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
-                        <label>Serial:</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
-                        <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
-                    </div>
-                    <img src="${item.image}" alt="Item Image" class="popup-image" onclick="openModal('${item.image}')">
-                    <div class="actions">
-                        <button onclick="enableEdit('${item.id}')">Edit</button>
-                        <button onclick="submitEdit('${item.id}')" style="display:none;" id="submit-${item.id}">Submit</button>
-                        <button onclick="deleteItem('${item.id}')">Delete</button>
-                    </div>
-                `;
-                resultsContainer.appendChild(li);
-            });
-        }
-
-        window.enableEdit = function(id) {
-            document.getElementById(`name-${id}`).disabled = false;
-            document.getElementById(`serial-${id}`).disabled = false;
-            document.getElementById(`stock-${id}`).disabled = false;
-            document.getElementById(`submit-${id}`).style.display = 'inline';
-        };
-
-        window.submitEdit = async function(id) {
-            const name = document.getElementById(`name-${id}`).value;
-            const serial = document.getElementById(`serial-${id}`).value;
-            const stock = document.getElementById(`stock-${id}`).value;
-
-            try {
-                await updateDoc(doc(db, "items", id), { name, serial, stock });
-                alert("Item updated successfully");
-                fetchFirestoreData();
-            } catch (error) {
-                console.error("Error updating document:", error);
-            }
-        };
-
-        window.deleteItem = async function(id) {
-            if (confirm("Are you sure you want to delete this item?")) {
-                try {
-                    await deleteDoc(doc(db, "items", id));
-                    alert("Item deleted successfully");
-                    fetchFirestoreData();
-                } catch (error) {
-                    console.error("Error deleting document:", error);
-                }
-            }
-        };
-
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value.toLowerCase();
-            const filteredItems = items.filter(item => item.name.toLowerCase().includes(query));
-            renderItems(filteredItems);
-        });
-
-        fetchFirestoreData();
-     document.getElementById('addItemBtn').addEventListener('click', () => openForm('addItemForm'));
+    document.getElementById('addItemBtn').addEventListener('click', () => openForm('addItemForm'));
     document.getElementById('addSheetBtn').addEventListener('click', () => openForm('addSheetForm'));
     document.getElementById('lowStockBtn').addEventListener('click', filterLowStock);
 
@@ -126,8 +43,13 @@
     async function submitNewItem() {
         const name = document.getElementById('newName').value;
         const serial = document.getElementById('newSerial').value;
-        const stock = document.getElementById('newStock').value;
+        const stock = parseInt(document.getElementById('newStock').value, 10);
         const image = document.getElementById('newImage').value;
+        
+        if (!name || !serial || isNaN(stock) || !image) {
+            alert("Please fill all fields correctly.");
+            return;
+        }
         
         await addDoc(collection(db, "items"), { name, serial, stock, image });
         alert("Item Added");
@@ -147,6 +69,7 @@
             const jsonData = XLSX.utils.sheet_to_json(sheet);
             
             for (let item of jsonData) {
+                if (!item.name || !item.serial || isNaN(parseInt(item.stock)) || !item.image) continue;
                 await addDoc(collection(db, "items"), item);
             }
             alert("Data Imported");
@@ -157,20 +80,20 @@
     }
     
     function filterLowStock() {
-        const lowStockItems = items.filter(item => item.stock < 10);
+        const lowStockItems = items.filter(item => parseInt(item.stock, 10) < 10);
         renderItems(lowStockItems);
-        document.getElementById('lowStockBtn').innerHTML = 'Low (X)';
+        document.getElementById('lowStockBtn').innerHTML = `Low (${lowStockItems.length})`;
     }
     
     async function updateLowStockCount() {
         const querySnapshot = await getDocs(collection(db, "items"));
-        const lowStockCount = querySnapshot.docs.filter(doc => doc.data().stock < 10).length;
+        const lowStockCount = querySnapshot.docs.filter(doc => parseInt(doc.data().stock, 10) < 10).length;
         document.getElementById('lowStockCount').innerText = lowStockCount;
     }
     
     setInterval(updateLowStockCount, 5000);
     fetchFirestoreData();
-    </script>
+</script>
     
     <style>
         body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
@@ -186,7 +109,7 @@
     </style>
 </head>
 <body>
-    <div class="top-panel">
+<div class="top-panel">
     <button id="addItemBtn">Add Item</button>
     <button id="addSheetBtn">Add Sheet</button>
     <button id="lowStockBtn">Low (<span id="lowStockCount">0</span>)</button>
