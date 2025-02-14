@@ -8,7 +8,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyAeNnTbv...",
@@ -22,8 +22,15 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        let items = [];
 
+        let items = [];
+ async function fetchLowStockCount() {
+            const querySnapshot = await getDocs(collection(db, "items"));
+            const lowStockItems = querySnapshot.docs.filter(doc => doc.data().stock < 10);
+            document.getElementById('lowStockCount').innerText = lowStockItems.length;
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchLowStockCount);
         async function fetchFirestoreData() {
             console.log("Fetching Firestore data...");
             const resultsContainer = document.getElementById('results');
@@ -119,6 +126,13 @@
         .popup-image:hover { transform: scale(1.2); }
         .actions { display: flex; gap: 10px; }
     </style>
+     <style>
+        body { font-family: 'Arial', sans-serif; }
+        .top-panel { display: flex; gap: 10px; padding: 10px; background: #ddd; }
+        .btn { padding: 10px; border: none; cursor: pointer; }
+        .low-stock-btn { position: relative; }
+        .low-stock-btn span { position: absolute; top: 0; right: 0; background: red; color: white; border-radius: 50%; padding: 5px; }
+    </style>
 </head>
 <body>
     <div class="controls">
@@ -126,6 +140,13 @@
     </div>
     <div class="container">
         <ul id="results" class="item-list"></ul>
+    </div>
+</body>
+    <body>
+    <div class="top-panel">
+        <button class="btn" id="addItemBtn">Add Item</button>
+        <button class="btn" id="addSheetBtn">Add Sheet</button>
+        <button class="btn low-stock-btn" id="lowStockBtn">Low <span id="lowStockCount">0</span></button>
     </div>
 </body>
 </html>
