@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+    .top-panel { display: flex; gap: 10px; padding: 10px; background: #eee; }
+    .form-popup { display: none; position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: white; padding: 15px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+    .close-btn { cursor: pointer; float: right; font-size: 20px; }
+</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Item Search</title>
@@ -107,6 +112,64 @@
         });
 
         fetchFirestoreData();
+     document.getElementById('addItemBtn').addEventListener('click', () => openForm('addItemForm'));
+    document.getElementById('addSheetBtn').addEventListener('click', () => openForm('addSheetForm'));
+    document.getElementById('lowStockBtn').addEventListener('click', filterLowStock);
+
+    function openForm(formId) {
+        document.getElementById(formId).style.display = 'block';
+    }
+    function closeForm(formId) {
+        document.getElementById(formId).style.display = 'none';
+    }
+    
+    async function submitNewItem() {
+        const name = document.getElementById('newName').value;
+        const serial = document.getElementById('newSerial').value;
+        const stock = document.getElementById('newStock').value;
+        const image = document.getElementById('newImage').value;
+        
+        await addDoc(collection(db, "items"), { name, serial, stock, image });
+        alert("Item Added");
+        closeForm('addItemForm');
+        fetchFirestoreData();
+    }
+    
+    function importSheet() {
+        const file = document.getElementById('excelFile').files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            
+            for (let item of jsonData) {
+                await addDoc(collection(db, "items"), item);
+            }
+            alert("Data Imported");
+            closeForm('addSheetForm');
+            fetchFirestoreData();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    function filterLowStock() {
+        const lowStockItems = items.filter(item => item.stock < 10);
+        renderItems(lowStockItems);
+        document.getElementById('lowStockBtn').innerHTML = 'Low (X)';
+    }
+    
+    async function updateLowStockCount() {
+        const querySnapshot = await getDocs(collection(db, "items"));
+        const lowStockCount = querySnapshot.docs.filter(doc => doc.data().stock < 10).length;
+        document.getElementById('lowStockCount').innerText = lowStockCount;
+    }
+    
+    setInterval(updateLowStockCount, 5000);
+    fetchFirestoreData();
     </script>
     
     <style>
@@ -119,9 +182,34 @@
         .popup-image { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; margin-left: 10px; cursor: pointer; transition: transform 0.3s ease-in-out; }
         .popup-image:hover { transform: scale(1.2); }
         .actions { display: flex; gap: 10px; }
+
     </style>
 </head>
 <body>
+    <div class="top-panel">
+    <button id="addItemBtn">Add Item</button>
+    <button id="addSheetBtn">Add Sheet</button>
+    <button id="lowStockBtn">Low (<span id="lowStockCount">0</span>)</button>
+</div>
+
+<!-- Add Item Form -->
+<div id="addItemForm" class="form-popup">
+    <span class="close-btn" onclick="closeForm('addItemForm')">&times;</span>
+    <h2>Add New Item</h2>
+    <input type="text" id="newName" placeholder="Item Name">
+    <input type="text" id="newSerial" placeholder="Serial Number">
+    <input type="number" id="newStock" placeholder="Stock Quantity">
+    <input type="text" id="newImage" placeholder="Image URL">
+    <button onclick="submitNewItem()">Submit</button>
+</div>
+
+<!-- Add Sheet Form -->
+<div id="addSheetForm" class="form-popup">
+    <span class="close-btn" onclick="closeForm('addSheetForm')">&times;</span>
+    <h2>Import Excel Data</h2>
+    <input type="file" id="excelFile">
+    <button onclick="importSheet()">Upload</button>
+</div>
     <div class="controls">
         <input type="text" id="search" placeholder="Search for an item...">
     </div>
