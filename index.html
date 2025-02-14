@@ -136,9 +136,29 @@
     </script>
 
     <style>
-        .item-info label { font-weight: bold; display: inline-block; width: 100px; text-align: right; }
-        .item-info input { border: 1px solid #ccc; padding: 5px; margin-bottom: 5px; width: 200px; }
-        .actions { display: flex; flex-direction: column; gap: 5px; }
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .item-info label {
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+            text-align: right;
+            margin-right: 10px;
+        }
+        .item-info input {
+            border: 1px solid #ccc;
+            padding: 5px;
+            margin-bottom: 5px;
+            width: 200px;
+        }
+        .actions { 
+            display: flex; 
+            flex-direction: row; 
+            gap: 5px; 
+        }
     </style>
 </head>
 <body>
