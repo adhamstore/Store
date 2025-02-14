@@ -5,44 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Item Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; }
-        .top-panel { display: flex; gap: 10px; padding: 10px; background: #eee; justify-content: center; }
-        .form-popup { display: none; position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: white; padding: 15px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
-        .item-list { list-style: none; padding: 0; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border: 1px solid #ddd; margin: 5px; background: white; }
-    </style>
-</head>
-<body>
-    <div class="top-panel">
-        <button id="addItemBtn">Add Item</button>
-        <input type="file" id="uploadSheet" accept=".xlsx, .xls">
-    </div>
-    <div id="addItemForm" class="form-popup">
-        <h3>Add Item</h3>
-        <label>Name:</label> <input type="text" id="itemName"><br>
-        <label>Serial:</label> <input type="text" id="itemSerial"><br>
-        <label>Stock:</label> <input type="number" id="itemStock"><br>
-        <button id="submitItem">Submit</button>
-        <button id="closeFormBtn">Close</button>
-    </div>
-    <ul id="results" class="item-list"></ul>
-
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAeNnTbv...",
+            authDomain: "store-fdde6.firebaseapp.com",
+            projectId: "store-fdde6",
+            storageBucket: "store-fdde6.appspot.com",
+            messagingSenderId: "89613962927",
+            appId: "1:89613962927:web:5646e8be819cc88ca28e5a",
+            measurementId: "G-25Y158ELFL"
+        };
 
-        const firebaseConfig = { /* Your Firebase Config */ };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
         let items = [];
 
         async function fetchFirestoreData() {
+            console.log("Fetching Firestore data...");
             const resultsContainer = document.getElementById('results');
             resultsContainer.innerHTML = '';
+
             try {
                 const querySnapshot = await getDocs(collection(db, "items"));
-                items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                items = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                items.sort((a, b) => a.name.localeCompare(b.name));
                 renderItems(items);
             } catch (error) {
                 console.error("Error fetching Firestore data:", error);
@@ -52,18 +46,22 @@
         function renderItems(filteredItems) {
             const resultsContainer = document.getElementById('results');
             resultsContainer.innerHTML = '';
+
             filteredItems.forEach(item => {
                 const li = document.createElement('li');
                 li.classList.add('item');
                 li.innerHTML = `
-                    <div>
+                    <div class="item-info">
                         <label>Name:</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
                         <label>Serial:</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
-                        <label>Stock:</label> <input type="number" value="${item.stock}" id="stock-${item.id}" disabled>
+                        <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
                     </div>
-                    <button onclick="enableEdit('${item.id}')">Edit</button>
-                    <button onclick="submitEdit('${item.id}')" id="submit-${item.id}" style="display:none;">Submit</button>
-                    <button onclick="deleteItem('${item.id}')">Delete</button>
+                    <img src="${item.image}" alt="Item Image" class="popup-image" onclick="openModal('${item.image}')">
+                    <div class="actions">
+                        <button onclick="enableEdit('${item.id}')">Edit</button>
+                        <button onclick="submitEdit('${item.id}')" style="display:none;" id="submit-${item.id}">Submit</button>
+                        <button onclick="deleteItem('${item.id}')">Delete</button>
+                    </div>
                 `;
                 resultsContainer.appendChild(li);
             });
@@ -80,8 +78,10 @@
             const name = document.getElementById(`name-${id}`).value;
             const serial = document.getElementById(`serial-${id}`).value;
             const stock = document.getElementById(`stock-${id}`).value;
+
             try {
-                await updateDoc(doc(db, "items", id), { name, serial, stock: Number(stock) });
+                await updateDoc(doc(db, "items", id), { name, serial, stock });
+                alert("Item updated successfully");
                 fetchFirestoreData();
             } catch (error) {
                 console.error("Error updating document:", error);
@@ -92,6 +92,7 @@
             if (confirm("Are you sure you want to delete this item?")) {
                 try {
                     await deleteDoc(doc(db, "items", id));
+                    alert("Item deleted successfully");
                     fetchFirestoreData();
                 } catch (error) {
                     console.error("Error deleting document:", error);
@@ -99,46 +100,33 @@
             }
         };
 
-        document.getElementById("addItemBtn").addEventListener("click", () => {
-            document.getElementById("addItemForm").style.display = "block";
-        });
-        document.getElementById("closeFormBtn").addEventListener("click", () => {
-            document.getElementById("addItemForm").style.display = "none";
-        });
-        document.getElementById("submitItem").addEventListener("click", async () => {
-            const name = document.getElementById("itemName").value;
-            const serial = document.getElementById("itemSerial").value;
-            const stock = document.getElementById("itemStock").value;
-            if (!name || !serial || !stock) return alert("Please fill in all fields.");
-            try {
-                await addDoc(collection(db, "items"), { name, serial, stock: Number(stock) });
-                fetchFirestoreData();
-                document.getElementById("addItemForm").style.display = "none";
-            } catch (error) {
-                console.error("Error adding item:", error);
-            }
-        });
-
-        document.getElementById("uploadSheet").addEventListener("change", async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const sheetData = XLSX.utils.sheet_to_json(sheet);
-                for (const row of sheetData) {
-                    if (row.Name && row.Serial && row.Stock) {
-                        await addDoc(collection(db, "items"), { name: row.Name, serial: row.Serial, stock: Number(row.Stock) });
-                    }
-                }
-                fetchFirestoreData();
-            };
-            reader.readAsArrayBuffer(file);
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const filteredItems = items.filter(item => item.name.toLowerCase().includes(query));
+            renderItems(filteredItems);
         });
 
         fetchFirestoreData();
     </script>
+    
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .controls { width: 50%; background: #ffffff; padding: 10px; display: flex; justify-content: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; margin-bottom: 10px; }
+        #search { width: 100%; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; }
+        .container { width: 90%; margin-top: 20px; }
+        .item-list { list-style: none; padding: 0; width: 100%; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .popup-image { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; margin-left: 10px; cursor: pointer; transition: transform 0.3s ease-in-out; }
+        .popup-image:hover { transform: scale(1.2); }
+        .actions { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <input type="text" id="search" placeholder="Search for an item...">
+    </div>
+    <div class="container">
+        <ul id="results" class="item-list"></ul>
+    </div>
 </body>
 </html>
