@@ -24,7 +24,7 @@
         const db = getFirestore(app);
 
         let items = [];
- async function fetchLowStockCount() {
+   async function fetchLowStockCount() {
             try {
                 const querySnapshot = await getDocs(collection(db, "items"));
                 const lowStockItems = querySnapshot.docs.filter(doc => Number(doc.data().stock) < 10);
@@ -34,18 +34,32 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", fetchLowStockCount);
+        async function addItemToFirestore(name, serial, stock) {
+            try {
+                await addDoc(collection(db, "items"), { name, serial, stock });
+                alert("Item added successfully!");
+                fetchLowStockCount();
+            } catch (error) {
+                console.error("Error adding item:", error);
+            }
+        }
 
-        document.getElementById("addItemBtn").addEventListener("click", function() {
-            alert("Add Item Button Clicked - Implement form popup here");
-        });
-        
-        document.getElementById("addSheetBtn").addEventListener("click", function() {
-            alert("Add Sheet Button Clicked - Implement Excel file handling here");
-        });
-        
-        document.getElementById("lowStockBtn").addEventListener("click", function() {
-            alert("Low Stock Button Clicked - Implement filtering logic here");
+        function showAddItemForm() {
+            document.getElementById("addItemForm").style.display = "block";
+        }
+
+        function closeAddItemForm() {
+            document.getElementById("addItemForm").style.display = "none";
+        }
+
+        document.getElementById("addItemBtn").addEventListener("click", showAddItemForm);
+        document.getElementById("closeFormBtn").addEventListener("click", closeAddItemForm);
+        document.getElementById("submitItem").addEventListener("click", function() {
+            const name = document.getElementById("itemName").value;
+            const serial = document.getElementById("itemSerial").value;
+            const stock = document.getElementById("itemStock").value;
+            addItemToFirestore(name, serial, stock);
+            closeAddItemForm();
         });
         async function fetchFirestoreData() {
             console.log("Fetching Firestore data...");
@@ -163,6 +177,14 @@
         <button class="btn" id="addItemBtn">Add Item</button>
         <button class="btn" id="addSheetBtn">Add Sheet</button>
         <button class="btn low-stock-btn" id="lowStockBtn">Low <span id="lowStockCount">0</span></button>
+    </div>
+          <div id="addItemForm" class="form-popup">
+        <h3>Add Item</h3>
+        <label>Name:</label> <input type="text" id="itemName"><br>
+        <label>Serial:</label> <input type="text" id="itemSerial"><br>
+        <label>Stock:</label> <input type="number" id="itemStock"><br>
+        <button id="submitItem">Submit</button>
+        <button id="closeFormBtn">Close</button>
     </div>
 </body>
 </html>
