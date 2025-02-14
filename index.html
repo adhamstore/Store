@@ -6,12 +6,10 @@
     <title>Item Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase SDK (Modular v9+) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
         
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAeNnTbv...",
             authDomain: "store-fdde6.firebaseapp.com",
@@ -22,41 +20,28 @@
             measurementId: "G-25Y158ELFL"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let items = [];
 
-      async function fetchFirestoreData() {
-    console.log("Fetching Firestore data...");
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
+        async function fetchFirestoreData() {
+            console.log("Fetching Firestore data...");
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
 
-    try {
-        const querySnapshot = await getDocs(collection(db, "items"));
-        items = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            console.log("Firestore Data:", data); // Debugging output
-
-            return {
-                id: doc.id,
-                name: data.name || "N/A",  // Ensure name is correctly retrieved
-                serial: data.serial || "N/A",
-                stock: data.stock !== undefined ? data.stock : "N/A",
-                image: (data.image && data.image.startsWith("http")) ? data.image : "https://via.placeholder.com/150" // Check if URL is valid
-            };
-        });
-
-        // Sort items alphabetically
-        items.sort((a, b) => a.name.localeCompare(b.name));
-
-        renderItems(items);
-    } catch (error) {
-        console.error("Error fetching Firestore data:", error);
-    }
-}
-
+            try {
+                const querySnapshot = await getDocs(collection(db, "items"));
+                items = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                items.sort((a, b) => a.name.localeCompare(b.name));
+                renderItems(items);
+            } catch (error) {
+                console.error("Error fetching Firestore data:", error);
+            }
+        }
 
         function renderItems(filteredItems) {
             const resultsContainer = document.getElementById('results');
@@ -67,15 +52,42 @@
                 li.classList.add('item');
                 li.innerHTML = `
                     <div>
-                        <strong>${item.name}</strong><br>
-                        <span>Serial: ${item.serial}</span><br>
-                        <span>In Storage: ${item.stock}</span>
+                        <input type="text" value="${item.name}" id="name-${item.id}">
+                        <input type="text" value="${item.serial}" id="serial-${item.id}">
+                        <input type="text" value="${item.stock}" id="stock-${item.id}">
                     </div>
                     <img src="${item.image}" alt="Item Image" onclick="openModal('${item.image}')">
+                    <button onclick="updateItem('${item.id}')">Edit</button>
+                    <button onclick="deleteItem('${item.id}')">Delete</button>
                 `;
                 resultsContainer.appendChild(li);
             });
         }
+
+        window.updateItem = async function(id) {
+            const name = document.getElementById(`name-${id}`).value;
+            const serial = document.getElementById(`serial-${id}`).value;
+            const stock = document.getElementById(`stock-${id}`).value;
+            try {
+                await updateDoc(doc(db, "items", id), { name, serial, stock });
+                alert("Item updated successfully!");
+                fetchFirestoreData();
+            } catch (error) {
+                console.error("Error updating item:", error);
+            }
+        };
+
+        window.deleteItem = async function(id) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                try {
+                    await deleteDoc(doc(db, "items", id));
+                    alert("Item deleted successfully!");
+                    fetchFirestoreData();
+                } catch (error) {
+                    console.error("Error deleting item:", error);
+                }
+            }
+        };
 
         document.getElementById('search').addEventListener('input', function () {
             const query = this.value.toLowerCase();
@@ -83,45 +95,20 @@
             renderItems(filteredItems);
         });
 
-        window.openModal = function(imageSrc) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            modalImage.src = imageSrc;
-            modal.style.display = 'flex';
-        };
-
-        window.closeModal = function(event) {
-            const modal = document.getElementById('imageModal');
-            if (!event || event.target === modal || event.target.classList.contains('close-btn')) {
-                modal.style.display = 'none';
-            }
-        };
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === "Escape") {
-                closeModal();
-            }
-        });
-
-        document.getElementById('imageModal').addEventListener('click', closeModal);
-
-        // Fetch data from Firestore on load
         fetchFirestoreData();
     </script>
-
+    
     <style>
         body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
-        .controls { position: fixed; top: 0; width: 50%; background: #ffffff; padding: 6px 0; display: flex; flex-direction: column; align-items: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; }
+        .controls { width: 50%; background: #ffffff; padding: 6px; display: flex; flex-direction: column; align-items: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; }
         input[type="text"] { width: 80%; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; margin-bottom: 4px; }
-        .container { width: 90%; margin-top: 90px; }
+        .container { width: 90%; margin-top: 20px; }
         .item-list { list-style: none; padding: 0; width: 100%; }
-        .item { display: flex; align-items: flex-start; justify-content: space-between; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); font-size: 20px; width: 100%; min-height: 130px; }
-        .item img { width: 220px; height: 180px; object-fit: cover; border-radius: 8px; margin-left: 20px; border: 2px solid #ddd; cursor: pointer; transition: transform 0.3s ease-in-out; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .item img { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; margin-left: 10px; cursor: pointer; transition: transform 0.3s ease-in-out; }
         .item img:hover { transform: scale(1.05); border-color: #007bff; }
-        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); justify-content: center; align-items: center; z-index: 2000; }
-        .image-modal img { width: 80%; height: auto; max-width: 90vw; max-height: 90vh; border-radius: 10px; }
-        .close-btn { position: absolute; top: 15px; right: 25px; font-size: 30px; color: white; cursor: pointer; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; }
-        .close-btn:hover { background: rgba(255, 0, 0, 0.7); }
+        .item button { margin-left: 10px; padding: 5px 10px; border: none; cursor: pointer; }
+        .item button:hover { background: #ddd; }
     </style>
 </head>
 <body>
@@ -130,10 +117,6 @@
     </div>
     <div class="container">
         <ul id="results" class="item-list"></ul>
-    </div>
-    <div class="image-modal" id="imageModal">
-        <span class="close-btn" onclick="closeModal(event)">X</span>
-        <img id="modalImage" src="" alt="Zoomed Image">
     </div>
 </body>
 </html>
