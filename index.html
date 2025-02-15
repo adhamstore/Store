@@ -28,7 +28,10 @@
         // Password Protection
         const password = "Adham_2025";
         const enteredPassword = prompt("Please enter the password to access the page:");
-        if (enteredPassword !== password) {
+        if (enteredPassword === null) {
+            // User pressed "Cancel"
+            window.location.href = "about:blank"; // Redirect to a blank page or close the window
+        } else if (enteredPassword !== password) {
             alert("Incorrect password. You will not be able to access the page.");
             window.location.href = "about:blank"; // Redirect to a blank page or close the window
         } else {
@@ -258,7 +261,7 @@
         body { 
             font-family: 'Arial', sans-serif; 
             background: #f4f4f4; 
-            display: flex; 
+            display: none; /* Hide the body by default */
             flex-direction: column; 
             align-items: center; 
             margin: 0; 
