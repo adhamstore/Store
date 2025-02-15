@@ -228,7 +228,26 @@
     </script>
     
     <style>
-        /* Add your CSS styles here */
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .controls { width: 50%; background: #ffffff; padding: 10px; display: flex; justify-content: center; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; margin-bottom: 10px; position: relative; }
+        #search { width: 100%; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; }
+        #toggleInputBox, #lowStockButton, #clearFilterButton { margin-left: 10px; padding: 8px 16px; font-size: 16px; border: none; border-radius: 6px; color: white; cursor: pointer; }
+        #toggleInputBox { background: #007bff; }
+        #lowStockButton { background: #dc3545; position: relative; }
+        #clearFilterButton { background: #6c757d; display: none; }
+        #lowStockBadge { position: absolute; top: -10px; right: -10px; background: #ffc107; color: black; border-radius: 50%; padding: 5px 10px; font-size: 12px; }
+        #inputBox { display: none; width: 50%; background: #ffffff; padding: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; margin-bottom: 10px; }
+        #inputBox input, #inputBox button { margin: 5px 0; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; width: 100%; }
+        .container { width: 90%; margin-top: 20px; }
+        .item-list { list-style: none; padding: 0; width: 100%; display: flex; flex-wrap: wrap; gap: 10px; }
+        .item { flex: 1 1 calc(33.333% - 20px); display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); min-width: 300px; max-width: 100%; }
+        .item-info { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+        .item-info label { font-weight: bold; }
+        .item-info input { width: 100%; padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        .image-container { margin-top: 10px; }
+        .popup-image { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.3s ease-in-out; }
+        .popup-image:hover { transform: scale(1.2); }
+        .actions { display: flex; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
