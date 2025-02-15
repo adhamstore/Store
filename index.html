@@ -96,15 +96,25 @@
 
             try {
                 let imageURL = document.getElementById(`image-${id}`).src; // Keep the old image if no new one is uploaded
+
+                // Upload new image if a file is selected
                 if (imageFile) {
-                    imageURL = await uploadImage(imageFile); // Upload new image
+                    imageURL = await uploadImage(imageFile); // Wait for the image upload to complete
                 }
 
-                await updateDoc(doc(db, "items", id), { name, serial, stock, image: imageURL });
+                // Update Firestore document with the new data
+                await updateDoc(doc(db, "items", id), { 
+                    name, 
+                    serial, 
+                    stock, 
+                    image: imageURL 
+                });
+
                 alert("Item updated successfully");
-                fetchFirestoreData();
+                fetchFirestoreData(); // Refresh the item list
             } catch (error) {
                 console.error("Error updating document:", error);
+                alert("Failed to update item. Please try again.");
             }
         };
 
