@@ -26,6 +26,16 @@
         let items = [];
         let lowStockCount = 0;
 
+        // Password Protection
+        const password = "Adham_2025";
+        const enteredPassword = prompt("Please enter the password to access the page:");
+        if (enteredPassword !== password) {
+            alert("Incorrect password. You will not be able to access the page.");
+            window.location.href = "about:blank"; // Redirect to a blank page or close the window
+        } else {
+            document.body.style.display = "block"; // Show the page content
+        }
+
         async function fetchFirestoreData() {
             console.log("Fetching Firestore data...");
             const resultsContainer = document.getElementById('results');
@@ -64,7 +74,7 @@
                         <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
                     </div>
                     <div class="image-container">
-                        <img src="${item.image}" alt="Item Image" class="popup-image" id="image-${item.id}">
+                        <img src="${item.image}" alt="Item Image" class="popup-image" id="image-${item.id}" onclick="openImagePopup('${item.image}')">
                         <input type="file" id="imageInput-${item.id}" accept="image/*" style="display: none;">
                     </div>
                     <div class="actions">
@@ -76,6 +86,31 @@
                 resultsContainer.appendChild(li);
             });
         }
+
+        // Image Popup
+        window.openImagePopup = function(imageSrc) {
+            const popup = document.createElement('div');
+            popup.classList.add('image-popup');
+            popup.innerHTML = `
+                <div class="popup-content">
+                    <span class="close-btn" onclick="closeImagePopup()">&times;</span>
+                    <img src="${imageSrc}" alt="Popup Image">
+                </div>
+            `;
+            document.body.appendChild(popup);
+            popup.addEventListener('click', (e) => {
+                if (e.target === popup) {
+                    closeImagePopup();
+                }
+            });
+        };
+
+        window.closeImagePopup = function() {
+            const popup = document.querySelector('.image-popup');
+            if (popup) {
+                popup.remove();
+            }
+        };
 
         window.enableEdit = function(id) {
             document.getElementById(`name-${id}`).disabled = false;
@@ -232,8 +267,8 @@
         #inputBox { display: none; width: 50%; background: #ffffff; padding: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 10px; margin-bottom: 10px; }
         #inputBox input, #inputBox button { margin: 5px 0; padding: 8px; font-size: 16px; border: 2px solid #888; border-radius: 6px; width: 100%; }
         .container { width: 90%; margin-top: 20px; }
-        .item-list { list-style: none; padding: 0; width: 100%; display: flex; flex-wrap: wrap; gap: 10px; }
-        .item { flex: 1 1 calc(33.333% - 20px); display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); min-width: 300px; max-width: 100%; }
+        .item-list { list-style: none; padding: 0; width: 100%; }
+        .item { display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin-bottom: 10px; }
         .item-info { width: 100%; display: flex; flex-direction: column; gap: 5px; }
         .item-info label { font-weight: bold; }
         .item-info input { width: 100%; padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
@@ -241,6 +276,10 @@
         .popup-image { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.3s ease-in-out; }
         .popup-image:hover { transform: scale(1.2); }
         .actions { display: flex; gap: 10px; margin-top: 10px; }
+        .image-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; }
+        .popup-content { position: relative; }
+        .popup-content img { max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+        .close-btn { position: absolute; top: -20px; right: -20px; font-size: 30px; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
