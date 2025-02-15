@@ -119,9 +119,10 @@
         };
 
         async function uploadImage(image) {
-            // Implement image upload logic here
-            // This is a placeholder function
-            return "https://via.placeholder.com/150"; // Return a placeholder URL
+            const baseURL = "https://adhamstore.github.io/Store/";
+            const imageName = image.name;
+            const imageURL = `${baseURL}${imageName}`;
+            return imageURL;
         }
 
         document.getElementById('search').addEventListener('input', function () {
