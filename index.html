@@ -27,16 +27,26 @@
 
         // Password Protection
         const password = "Adham_2025";
-        const enteredPassword = prompt("Please enter the password to access the page:");
-        if (enteredPassword === null) {
-            // User pressed "Cancel"
-            window.location.href = "about:blank"; // Redirect to a blank page or close the window
-        } else if (enteredPassword !== password) {
-            alert("Incorrect password. You will not be able to access the page.");
-            window.location.href = "about:blank"; // Redirect to a blank page or close the window
-        } else {
-            document.body.style.display = "block"; // Show the page content
+        let accessGranted = false;
+
+        // Function to repeatedly prompt for password until correct
+        function checkPassword() {
+            while (!accessGranted) {
+                const enteredPassword = prompt("Please enter the password to access the page:");
+                if (enteredPassword === null) {
+                    // User pressed "Cancel"
+                    alert("You must enter the password to access the page.");
+                } else if (enteredPassword === password) {
+                    accessGranted = true;
+                    document.body.style.display = "block"; // Show the page content
+                } else {
+                    alert("Incorrect password. Please try again.");
+                }
+            }
         }
+
+        // Call the password check function
+        checkPassword();
 
         async function fetchFirestoreData() {
             console.log("Fetching Firestore data...");
@@ -261,11 +271,12 @@
         body { 
             font-family: 'Arial', sans-serif; 
             background: #f4f4f4; 
-            display: none; /* Hide the body by default */
+            display: flex; 
             flex-direction: column; 
             align-items: center; 
             margin: 0; 
             padding: 20px; 
+            display: none; /* Initially hide the page content */
         }
         .controls { 
             width: 100%; 
