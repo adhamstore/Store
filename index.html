@@ -84,14 +84,14 @@
                         <label>Name:</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
                         <label>Serial:</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
                         <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
-                        <label>Price:</label> <input type="text" value="${item.price}" id="price-${item.id}" disabled>                    
-					</div>
+                    </div>
                     <div class="image-container">
                         <img src="${item.image}" alt="Item Image" class="popup-image" id="image-${item.id}" onclick="openImagePopup('${item.image}')">
                         <input type="file" id="imageInput-${item.id}" accept="image/*" style="display: none;">
                     </div>
                     <div class="actions">
                         <button onclick="enableEdit('${item.id}')">Edit</button>
+                        <button onclick="submitEdit('${item.id}')" style="display:none;" id="submit-${item.id}">Submit</button>
                         <button onclick="deleteItem('${item.id}')">Delete</button>
                     </div>
                 `;
@@ -128,7 +128,6 @@
             document.getElementById(`name-${id}`).disabled = false;
             document.getElementById(`serial-${id}`).disabled = false;
             document.getElementById(`stock-${id}`).disabled = false;
-			document.getElementById(`price-${id}`).disabled = false;
             document.getElementById(`imageInput-${id}`).style.display = 'block'; // Show image input
             document.getElementById(`submit-${id}`).style.display = 'inline';
         };
@@ -137,7 +136,6 @@
             const name = document.getElementById(`name-${id}`).value;
             const serial = document.getElementById(`serial-${id}`).value;
             const stock = document.getElementById(`stock-${id}`).value;
-			const price = document.getElementById(`price-${id}`).value;
             const imageInput = document.getElementById(`imageInput-${id}`);
             const imageFile = imageInput.files[0];
 
@@ -147,7 +145,7 @@
                     imageURL = await uploadImage(imageFile); // Upload new image
                 }
 
-                await updateDoc(doc(db, "items", id), { name, serial, stock, price, image: imageURL });
+                await updateDoc(doc(db, "items", id), { name, serial, stock, image: imageURL });
                 alert("Item updated successfully");
                 fetchFirestoreData();
             } catch (error) {
@@ -189,17 +187,15 @@
             const name = document.getElementById('inputName').value;
             const serial = document.getElementById('inputSerial').value;
             const stock = document.getElementById('inputStock').value;
-			const price = document.getElementById('inputPrice').value;
             const image = document.getElementById('inputImage').files[0];
 
-            if (name && serial && stock && price && image) {
+            if (name && serial && stock && image) {
                 try {
                     const imageURL = await uploadImage(image);
                     await addDoc(collection(db, "items"), {
                         name,
                         serial,
                         stock,
-						price,
                         image: imageURL
                     });
                     alert("Item added successfully");
@@ -218,7 +214,6 @@
             document.getElementById('inputName').value = '';
             document.getElementById('inputSerial').value = '';
             document.getElementById('inputStock').value = '';
-			document.getElementById('inputPrice').value = '';
             document.getElementById('inputImage').value = '';
         }
 
@@ -234,14 +229,13 @@
                     const json = XLSX.utils.sheet_to_json(worksheet);
 
                     json.forEach(async (row) => {
-                        const { Name, Serial, Stock, Price, Image } = row;
-                        if (Name && Serial && Stock && Price && Image) {
+                        const { Name, Serial, Stock, Image } = row;
+                        if (Name && Serial && Stock && Image) {
                             try {
                                 await addDoc(collection(db, "items"), {
                                     name: Name,
                                     serial: Serial,
                                     stock: Stock,
-									price: Price,
                                     image: Image
                                 });
                             } catch (error) {
@@ -285,16 +279,16 @@
             display: none; /* Initially hide the page content */
         }
         .controls { 
-            width: 90%; 
-            max-width: 1200px; 
+            width: 100%; 
+            max-width: 800px; 
             background: #ffffff; 
-            padding: 20px; 
+            padding: 10px; 
             display: flex; 
             flex-wrap: wrap; 
             justify-content: center; 
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
             border-radius: 10px; 
-            margin-bottom: 20px; 
+            margin-bottom: 10px; 
         }
         .button-row { 
             display: flex; 
@@ -303,13 +297,13 @@
         }
         #search { 
             width: 100%; 
-            padding: 10px; 
+            padding: 8px; 
             font-size: 16px; 
             border: 2px solid #888; 
             border-radius: 6px; 
         }
         #toggleInputBox, #lowStockButton, #clearFilterButton, #uploadExcelLabel { 
-            padding: 10px 20px; 
+            padding: 8px 16px; 
             font-size: 16px; 
             border: none; 
             border-radius: 6px; 
@@ -332,25 +326,25 @@
         }
         #inputBox { 
             display: none; 
-            width: 90%; 
-            max-width: 1200px; 
+            width: 100%; 
+            max-width: 800px; 
             background: #ffffff; 
-            padding: 20px; 
+            padding: 10px; 
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
             border-radius: 10px; 
-            margin-bottom: 20px; 
+            margin-bottom: 10px; 
         }
         #inputBox input, #inputBox button { 
-            margin: 10px 0; 
-            padding: 10px; 
+            margin: 5px 0; 
+            padding: 8px; 
             font-size: 16px; 
             border: 2px solid #888; 
             border-radius: 6px; 
             width: 100%; 
         }
         .container { 
-            width: 90%; 
-            max-width: 1200px; 
+            width: 100%; 
+            max-width: 800px; 
             margin-top: 20px; 
         }
         .item-list { 
@@ -360,59 +354,44 @@
         }
         .item { 
             display: flex; 
-            justify-content: space-between; 
+            flex-direction: column; 
             align-items: center; 
-            padding: 20px; 
+            padding: 15px; 
             border: 2px solid #ddd; 
             border-radius: 10px; 
             background: white; 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-            margin-bottom: 20px; 
+            margin-bottom: 10px; 
         }
         .item-info { 
-            width: 60%; 
+            width: 100%; 
             display: flex; 
             flex-direction: column; 
-            gap: 10px; 
+            gap: 5px; 
         }
         .item-info label { font-weight: bold; }
         .item-info input { 
             width: 100%; 
-            padding: 10px; 
-            font-size: 16px; 
+            padding: 5px; 
+            font-size: 14px; 
             border: 1px solid #ccc; 
             border-radius: 4px; 
         }
-        .image-container { 
-            width: 30%; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-end; 
-        }
+        .image-container { margin-top: 10px; }
         .popup-image { 
-            width: 150px; 
-            height: 150px; 
+            width: 100px; 
+            height: 80px; 
             object-fit: cover; 
             border-radius: 8px; 
             cursor: pointer; 
             transition: transform 0.3s ease-in-out; 
         }
-        .popup-image:hover { transform: scale(1.1); }
+        .popup-image:hover { transform: scale(1.2); }
         .actions { 
             display: flex; 
-            flex-direction: column; 
             gap: 10px; 
+            margin-top: 10px; 
         }
-        .actions button { 
-            padding: 10px; 
-            font-size: 14px; 
-            border: none; 
-            border-radius: 6px; 
-            color: white; 
-            cursor: pointer; 
-        }
-        .actions button:nth-child(1) { background: #007bff; } /* Edit button */
-        .actions button:nth-child(2) { background: #dc3545; } /* Delete button */
         .image-popup { 
             position: fixed; 
             top: 0; 
@@ -455,7 +434,6 @@
         <input type="text" id="inputName" placeholder="Name">
         <input type="text" id="inputSerial" placeholder="Serial No.">
         <input type="text" id="inputStock" placeholder="In Stock">
-		<input type="text" id="inputPrice" placeholder="Price">
         <input type="file" id="inputImage" accept="image/*">
         <button id="submitData">Submit</button>
     </div>
