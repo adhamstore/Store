@@ -430,61 +430,66 @@ fetchFirestoreData().then(() => {
             padding: 0; 
             width: 100%; 
         }
-        .item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 20px; 
-            border: 2px solid #ddd; 
-            border-radius: 10px; 
-            background: white; 
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-            margin-bottom: 20px; 
-        }
-        .item-info { 
-            width: 60%; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-        }
-        .item-info label { font-weight: bold; }
-        .item-info input { 
-            width: 100%; 
-            padding: 10px; 
-            font-size: 16px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-        }
-        .image-container { 
-            width: 30%; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-end; 
-        }
-        .popup-image { 
-            width: 150px; 
-            height: 150px; 
-            object-fit: cover; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            transition: transform 0.3s ease-in-out; 
-        }
-        .popup-image:hover { transform: scale(1.1); }
-        .actions { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-        }
-        .actions button { 
-            padding: 10px; 
-            font-size: 14px; 
-            border: none; 
-            border-radius: 6px; 
-            color: white; 
-            cursor: pointer; 
-        }
-        .actions button:nth-child(1) { background: #007bff; } /* Edit button */
-        .actions button:nth-child(2) { background: #dc3545; } /* Delete button */
+.item {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    padding: 20px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    position: relative; /* For positioning the image container */
+}
+
+.item-info {
+    width: 100%; /* Take full width */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center; /* Center text */
+}
+
+.image-container {
+    width: 100%; /* Take full width */
+    display: flex;
+    justify-content: center; /* Center the image horizontally */
+    margin-top: 20px; /* Add some space above the image */
+}
+
+.popup-image {
+    width: 200px; /* Increase image size */
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+}
+
+.popup-image:hover {
+    transform: scale(1.1);
+}
+
+.actions {
+    display: flex;
+    justify-content: center; /* Center buttons horizontally */
+    gap: 10px;
+    margin-top: 20px; /* Add some space above the buttons */
+}
+
+.actions button {
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+}
+
+.actions button:nth-child(1) { background: #007bff; } /* Edit button */
+.actions button:nth-child(2) { background: #dc3545; } /* Delete button */
+.actions button:nth-child(3) { background: #28a745; } /* Submit button */
         .image-popup { 
             position: fixed; 
             top: 0; 
