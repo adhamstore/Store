@@ -421,15 +421,19 @@ fetchFirestoreData().then(() => {
             width: 100%; 
         }
         .container { 
-            width: 90%; 
-            max-width: 1200px; 
-            margin-top: 20px; 
-        }
-        .item-list { 
-            list-style: none; 
-            padding: 0; 
-            width: 100%; 
-        }
+    width: 90%; 
+    max-width: 1200px; 
+    margin: 20px auto; /* Center the container horizontally */
+    display: flex;
+    justify-content: center; /* Center the content inside the container */
+}
+
+.item-list { 
+    list-style: none; 
+    padding: 0; 
+    width: 100%; /* Make the list take the full width of the container */
+    max-width: 1200px; /* Match the max-width of the search box */
+}
 .item {
     display: flex;
     flex-direction: column; /* Stack items vertically */
