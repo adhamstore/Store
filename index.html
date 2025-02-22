@@ -436,9 +436,8 @@ fetchFirestoreData().then(() => {
 }
 .item {
     display: flex;
-    flex-direction: row; /* Align items horizontally */
-    justify-content: space-between; /* Space out the content */
-    align-items: flex-start; /* Align items to the top */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
     padding: 20px;
     border: 2px solid #ddd;
     border-radius: 10px;
@@ -447,22 +446,19 @@ fetchFirestoreData().then(() => {
     margin-bottom: 20px;
     position: relative; /* For positioning the image container */
 }
-
 .item-info {
-    width: 60%; /* Adjust width as needed */
+    width: 100%; /* Take full width */
     display: flex;
     flex-direction: column;
     gap: 10px;
-    text-align: right; /* Align text to the right */
+    text-align: center; /* Center text */
 }
-
 .image-container {
-    width: 30%; /* Adjust width as needed */
+    width: 100%; /* Take full width */
     display: flex;
-    justify-content: flex-start; /* Align image to the left */
-    margin-top: 0; /* Remove top margin */
+    justify-content: center; /* Center the image horizontally */
+    margin-top: 20px; /* Add some space above the image */
 }
-
 .popup-image {
     width: 200px; /* Increase image size */
     height: 200px;
