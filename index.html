@@ -272,6 +272,49 @@
         });
 
         fetchFirestoreData();
+    let duplicateCount = 0;
+
+function updateDuplicateCount() {
+    const serialCounts = {};
+    items.forEach(item => {
+        if (serialCounts[item.serial]) {
+            serialCounts[item.serial]++;
+        } else {
+            serialCounts[item.serial] = 1;
+        }
+    });
+
+    duplicateCount = Object.values(serialCounts).filter(count => count > 1).length;
+    document.getElementById('duplicateBadge').textContent = duplicateCount;
+}
+
+document.getElementById('duplicateButton').addEventListener('click', function () {
+    const serialCounts = {};
+    items.forEach(item => {
+        if (serialCounts[item.serial]) {
+            serialCounts[item.serial].push(item.id);
+        } else {
+            serialCounts[item.serial] = [item.id];
+        }
+    });
+
+    Object.values(serialCounts).forEach(ids => {
+        if (ids.length > 1) {
+            ids.slice(1).forEach(id => {
+                deleteItem(id);
+            });
+        }
+    });
+
+    alert("Duplicate items have been removed.");
+    fetchFirestoreData();
+});
+
+// Call this function after fetching data
+fetchFirestoreData().then(() => {
+    updateDuplicateCount();
+});
+    
     </script>
 
     <style>
@@ -439,6 +482,27 @@
             color: white; 
             cursor: pointer; 
         }
+        #duplicateButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    background: #28a745; /* Green color for the duplicate button */
+    position: relative;
+}
+
+#duplicateBadge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ffc107;
+    color: black;
+    border-radius: 50%;
+    padding: 5px 10px;
+    font-size: 12px;
+}
     </style>
 </head>
 <body>
@@ -446,6 +510,7 @@
         <div class="button-row">
             <button id="toggleInputBox">Add Item</button>
             <button id="lowStockButton">Low <span id="lowStockBadge">0</span></button>
+            <button id="duplicateButton">Duplicate <span id="duplicateBadge">0</span></button>
             <input type="file" id="uploadExcel" accept=".xlsx, .xls" style="display: none;">
             <label for="uploadExcel" id="uploadExcelLabel">Upload Excel</label>
         </div>
