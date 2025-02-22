@@ -288,7 +288,23 @@ function updateDuplicateCount() {
     document.getElementById('duplicateBadge').textContent = duplicateCount;
 }
 
-document.getElementById('duplicateButton').addEventListener('click', function () {
+// Function to delete an item (with optional bulk deletion flag)
+window.deleteItem = async function(id, isBulkDelete = false) {
+    if (isBulkDelete || confirm("Are you sure you want to delete this item?")) {
+        try {
+            await deleteDoc(doc(db, "items", id));
+            if (!isBulkDelete) {
+                alert("Item deleted successfully");
+            }
+            fetchFirestoreData();
+        } catch (error) {
+            console.error("Error deleting document:", error);
+        }
+    }
+};
+
+// Event listener for the "Duplicate" button
+document.getElementById('duplicateButton').addEventListener('click', async function () {
     const serialCounts = {};
     items.forEach(item => {
         if (serialCounts[item.serial]) {
@@ -298,18 +314,28 @@ document.getElementById('duplicateButton').addEventListener('click', function ()
         }
     });
 
+    // Collect all duplicate IDs to delete
+    const duplicateIds = [];
     Object.values(serialCounts).forEach(ids => {
         if (ids.length > 1) {
-            ids.slice(1).forEach(id => {
-                deleteItem(id);
-            });
+            duplicateIds.push(...ids.slice(1)); // Keep the first item, delete the rest
         }
     });
 
-    alert("Duplicate items have been removed.");
-    fetchFirestoreData();
+    if (duplicateIds.length > 0) {
+        // Show confirmation only once
+        if (confirm("Are you sure you want to delete all duplicate items?")) {
+            // Delete all duplicates in bulk
+            for (const id of duplicateIds) {
+                await deleteItem(id, true); // Pass `true` to indicate bulk deletion
+            }
+            alert("All duplicate items have been removed successfully.");
+            fetchFirestoreData();
+        }
+    } else {
+        alert("No duplicate items found.");
+    }
 });
-
 // Call this function after fetching data
 fetchFirestoreData().then(() => {
     updateDuplicateCount();
