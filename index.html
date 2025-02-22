@@ -436,8 +436,9 @@ fetchFirestoreData().then(() => {
 }
 .item {
     display: flex;
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
+    flex-direction: row; /* Align items horizontally */
+    justify-content: space-between; /* Space out the content */
+    align-items: flex-start; /* Align items to the top */
     padding: 20px;
     border: 2px solid #ddd;
     border-radius: 10px;
@@ -448,18 +449,18 @@ fetchFirestoreData().then(() => {
 }
 
 .item-info {
-    width: 100%; /* Take full width */
+    width: 60%; /* Adjust width as needed */
     display: flex;
     flex-direction: column;
     gap: 10px;
-    text-align: center; /* Center text */
+    text-align: right; /* Align text to the right */
 }
 
 .image-container {
-    width: 100%; /* Take full width */
+    width: 30%; /* Adjust width as needed */
     display: flex;
-    justify-content: center; /* Center the image horizontally */
-    margin-top: 20px; /* Add some space above the image */
+    justify-content: flex-start; /* Align image to the left */
+    margin-top: 0; /* Remove top margin */
 }
 
 .popup-image {
