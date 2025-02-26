@@ -24,6 +24,7 @@
 
         let items = [];
         let lowStockCount = 0;
+        let isEditingSorting = false;
 
         // Password Protection
         const password = "Adham_2025";
@@ -48,26 +49,25 @@
         // Call the password check function
         checkPassword();
 
-       async function fetchFirestoreData() {
-    console.log("Fetching Firestore data...");
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
+        async function fetchFirestoreData() {
+            console.log("Fetching Firestore data...");
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
 
-    try {
-        const querySnapshot = await getDocs(collection(db, "items"));
-        items = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        items.sort((a, b) => a.name.localeCompare(b.name));
-        updateLowStockCount(); // Update low stock count
-        updateDuplicateCount(); // Update duplicate count
-        renderItems(items);
-    } catch (error) {
-        console.error("Error fetching Firestore data:", error);
-    }
-}
-
+            try {
+                const querySnapshot = await getDocs(collection(db, "items"));
+                items = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                items.sort((a, b) => a.name.localeCompare(b.name));
+                updateLowStockCount(); // Update low stock count
+                updateDuplicateCount(); // Update duplicate count
+                renderItems(items);
+            } catch (error) {
+                console.error("Error fetching Firestore data:", error);
+            }
+        }
 
         function updateLowStockCount() {
             lowStockCount = items.filter(item => item.stock < 10).length;
@@ -83,14 +83,19 @@
                 li.classList.add('item');
                 li.innerHTML = `
                     <div class="item-info">
-                        <label>Name:</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
-                        <label>Serial:</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
-                        <label>In Storage:</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
-                        <label>Price:</label> <input type="text" value="${item.price}" id="price-${item.id}" disabled>                    
+                        <label>Name</label> <input type="text" value="${item.name}" id="name-${item.id}" disabled>
+                        <label>Serial</label> <input type="text" value="${item.serial}" id="serial-${item.id}" disabled>
+                        <label>In Storage</label> <input type="text" value="${item.stock}" id="stock-${item.id}" disabled>
+                        <label>Price</label> <input type="text" value="${item.price}" id="price-${item.id}" disabled>                    
                     </div>
                     <div class="image-container">
                         <img src="${item.image}" alt="Item Image" class="popup-image" id="image-${item.id}" onclick="openImagePopup('${item.image}')">
                         <input type="file" id="imageInput-${item.id}" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="sorting-sliders">
+                        <label>طقم</label> <input type="checkbox" id="tqam-${item.id}" ${item.tqam ? 'checked' : ''} ${isEditingSorting ? '' : 'disabled'}>
+                        <label>مفردات</label> <input type="checkbox" id="mofradat-${item.id}" ${item.mofradat ? 'checked' : ''} ${isEditingSorting ? '' : 'disabled'}>
+                        <label>حلل</label> <input type="checkbox" id="halal-${item.id}" ${item.halal ? 'checked' : ''} ${isEditingSorting ? '' : 'disabled'}>
                     </div>
                     <div class="actions">
                         <button onclick="enableEdit('${item.id}')">Edit</button>
@@ -273,76 +278,60 @@
             document.getElementById('clearFilterButton').style.display = 'none';
         });
 
+        // Export to Excel
+        document.getElementById('exportExcel').addEventListener('click', function () {
+            const data = items.map(item => ({
+                Name: item.name,
+                Serial: item.serial,
+                Stock: item.stock,
+                Price: item.price,
+                Image: item.image
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Items");
+            XLSX.writeFile(wb, "items_export.xlsx");
+        });
+
+        // Edit Sorting
+        document.getElementById('editSortingButton').addEventListener('click', function () {
+            isEditingSorting = true;
+            renderItems(items);
+            document.getElementById('submitSortingButton').style.display = 'inline';
+        });
+
+        // Submit Sorting
+        document.getElementById('submitSortingButton').addEventListener('click', async function () {
+            isEditingSorting = false;
+            for (const item of items) {
+                const tqam = document.getElementById(`tqam-${item.id}`).checked;
+                const mofradat = document.getElementById(`mofradat-${item.id}`).checked;
+                const halal = document.getElementById(`halal-${item.id}`).checked;
+                await updateDoc(doc(db, "items", item.id), { tqam, mofradat, halal });
+            }
+            alert("Sorting updated successfully");
+            renderItems(items);
+            document.getElementById('submitSortingButton').style.display = 'none';
+        });
+
+        // Filter by Category
+        document.getElementById('filterTqam').addEventListener('change', function () {
+            const filteredItems = this.checked ? items.filter(item => item.tqam) : items;
+            renderItems(filteredItems);
+        });
+
+        document.getElementById('filterMofradat').addEventListener('change', function () {
+            const filteredItems = this.checked ? items.filter(item => item.mofradat) : items;
+            renderItems(filteredItems);
+        });
+
+        document.getElementById('filterHalal').addEventListener('change', function () {
+            const filteredItems = this.checked ? items.filter(item => item.halal) : items;
+            renderItems(filteredItems);
+        });
+
         fetchFirestoreData();
-    let duplicateCount = 0;
-
-function updateDuplicateCount() {
-    const serialCounts = {};
-    items.forEach(item => {
-        if (serialCounts[item.serial]) {
-            serialCounts[item.serial]++;
-        } else {
-            serialCounts[item.serial] = 1;
-        }
-    });
-
-    duplicateCount = Object.values(serialCounts).filter(count => count > 1).length;
-    document.getElementById('duplicateBadge').textContent = duplicateCount;
-}
-
-// Function to delete an item (with optional bulk deletion flag)
-window.deleteItem = async function(id, isBulkDelete = false) {
-    if (isBulkDelete || confirm("Are you sure you want to delete this item?")) {
-        try {
-            await deleteDoc(doc(db, "items", id));
-            if (!isBulkDelete) {
-                alert("Item deleted successfully");
-            }
-            fetchFirestoreData();
-        } catch (error) {
-            console.error("Error deleting document:", error);
-        }
-    }
-};
-
-// Event listener for the "Duplicate" button
-document.getElementById('duplicateButton').addEventListener('click', async function () {
-    const serialCounts = {};
-    items.forEach(item => {
-        if (serialCounts[item.serial]) {
-            serialCounts[item.serial].push(item.id);
-        } else {
-            serialCounts[item.serial] = [item.id];
-        }
-    });
-
-    // Collect all duplicate IDs to delete
-    const duplicateIds = [];
-    Object.values(serialCounts).forEach(ids => {
-        if (ids.length > 1) {
-            duplicateIds.push(...ids.slice(1)); // Keep the first item, delete the rest
-        }
-    });
-
-    if (duplicateIds.length > 0) {
-        // Show confirmation only once
-        if (confirm("Are you sure you want to delete all duplicate items?")) {
-            // Delete all duplicates in bulk
-            for (const id of duplicateIds) {
-                await deleteItem(id, true); // Pass `true` to indicate bulk deletion
-            }
-            alert("All duplicate items have been removed successfully.");
-            fetchFirestoreData();
-        }
-    } else {
-        alert("No duplicate items found.");
-    }
-});
-// Call this function after fetching data
-fetchFirestoreData().then(() => {
-    updateDuplicateCount();
-});
-    
     </script>
 
     <style>
@@ -357,17 +346,17 @@ fetchFirestoreData().then(() => {
             display: none; /* Initially hide the page content */
         }
         .controls { 
-    width: 90%; 
-    max-width: 1200px; 
-    background: #ffffff; 
-    padding: 20px; 
-    display: flex; 
-    flex-wrap: wrap; 
-    justify-content: center; 
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
-    border-radius: 10px; 
-    margin: 20px auto; /* Match the margin of the .container */
-}
+            width: 90%; 
+            max-width: 1200px; 
+            background: #ffffff; 
+            padding: 20px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
+            border-radius: 10px; 
+            margin: 20px auto; 
+        }
         .button-row { 
             display: flex; 
             gap: 10px; 
@@ -380,7 +369,7 @@ fetchFirestoreData().then(() => {
             border: 2px solid #888; 
             border-radius: 6px; 
         }
-        #toggleInputBox, #lowStockButton, #clearFilterButton, #uploadExcelLabel { 
+        #toggleInputBox, #lowStockButton, #clearFilterButton, #uploadExcelLabel, #exportExcel, #editSortingButton, #submitSortingButton { 
             padding: 10px 20px; 
             font-size: 16px; 
             border: none; 
@@ -392,6 +381,9 @@ fetchFirestoreData().then(() => {
         #lowStockButton { background: #dc3545; position: relative; }
         #clearFilterButton { background: #6c757d; display: none; }
         #uploadExcelLabel { background: #28a745; }
+        #exportExcel { background: #17a2b8; }
+        #editSortingButton { background: #ffc107; }
+        #submitSortingButton { background: #28a745; display: none; }
         #lowStockBadge { 
             position: absolute; 
             top: -10px; 
@@ -421,80 +413,83 @@ fetchFirestoreData().then(() => {
             width: 100%; 
         }
         .container { 
-    width: 90%; 
-    max-width: 1200px; 
-    margin: 20px auto; /* Center the container horizontally */
-    display: flex;
-    justify-content: center; /* Center the content inside the container */
-}
-
-.item-list { 
-    list-style: none; 
-    padding: 0; 
-    width: 100%; /* Make the list take the full width of the container */
-    max-width: 1200px; /* Match the max-width of the search box */
-}
-.item {
-    display: flex;
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
-    padding: 20px;
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    background: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    position: relative; /* For positioning the image container */
-}
-.item-info {
-    width: 100%; /* Take full width */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    text-align: left; /* Center text */
-}
-.item-info label {
-width: 100px; /* Set a fixed width for the labels */
-text-align: left; /* Align labels to the left */
-}
-.image-container {
-    width: 100%; /* Take full width */
-    display: flex;
-    justify-content: center; /* Center the image horizontally */
-    margin-top: 20px; /* Add some space above the image */
-}
-.popup-image {
-    width: 200px; /* Increase image size */
-    height: 200px;
-    object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.3s ease-in-out;
-}
-
-.popup-image:hover {
-    transform: scale(1.1);
-}
-
-.actions {
-    display: flex;
-    justify-content: center; /* Center buttons horizontally */
-    gap: 10px;
-    margin-top: 20px; /* Add some space above the buttons */
-}
-
-.actions button {
-    padding: 10px;
-    font-size: 14px;
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-}
-
-.actions button:nth-child(1) { background: #007bff; } /* Edit button */
-.actions button:nth-child(2) { background: #dc3545; } /* Delete button */
-.actions button:nth-child(3) { background: #28a745; } /* Submit button */
+            width: 90%; 
+            max-width: 1200px; 
+            margin: 20px auto; 
+            display: flex;
+            justify-content: center; 
+        }
+        .item-list { 
+            list-style: none; 
+            padding: 0; 
+            width: 100%; 
+            max-width: 1200px; 
+        }
+        .item {
+            display: flex;
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative; 
+        }
+        .item-info {
+            width: 100%; 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left; 
+        }
+        .item-info label {
+            width: 100px; 
+            text-align: left; 
+        }
+        .image-container {
+            width: 100%; 
+            display: flex;
+            justify-content: center; 
+            margin-top: 20px; 
+        }
+        .popup-image {
+            width: 200px; 
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+        .popup-image:hover {
+            transform: scale(1.1);
+        }
+        .sorting-sliders {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .sorting-sliders label {
+            font-size: 14px;
+        }
+        .actions {
+            display: flex;
+            justify-content: center; 
+            gap: 10px;
+            margin-top: 20px; 
+        }
+        .actions button {
+            padding: 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+        }
+        .actions button:nth-child(1) { background: #007bff; } 
+        .actions button:nth-child(2) { background: #dc3545; } 
+        .actions button:nth-child(3) { background: #28a745; } 
         .image-popup { 
             position: fixed; 
             top: 0; 
@@ -521,26 +516,33 @@ text-align: left; /* Align labels to the left */
             cursor: pointer; 
         }
         #duplicateButton {
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    background: #28a745; /* Green color for the duplicate button */
-    position: relative;
-}
-
-#duplicateBadge {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: #ffc107;
-    color: black;
-    border-radius: 50%;
-    padding: 5px 10px;
-    font-size: 12px;
-}
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            background: #28a745; 
+            position: relative;
+        }
+        #duplicateBadge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ffc107;
+            color: black;
+            border-radius: 50%;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .filter-checkboxes {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .filter-checkboxes label {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -551,6 +553,14 @@ text-align: left; /* Align labels to the left */
             <button id="duplicateButton">Duplicate <span id="duplicateBadge">0</span></button>
             <input type="file" id="uploadExcel" accept=".xlsx, .xls" style="display: none;">
             <label for="uploadExcel" id="uploadExcelLabel">Upload Excel</label>
+            <button id="exportExcel">Export to Excel</button>
+            <button id="editSortingButton">Edit Sorting</button>
+            <button id="submitSortingButton">Submit Sorting</button>
+        </div>
+        <div class="filter-checkboxes">
+            <label><input type="checkbox" id="filterTqam"> طقم</label>
+            <label><input type="checkbox" id="filterMofradat"> مفردات</label>
+            <label><input type="checkbox" id="filterHalal"> حلل</label>
         </div>
         <input type="text" id="search" placeholder="Search for an item...">
         <button id="clearFilterButton">X</button>
