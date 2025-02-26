@@ -316,20 +316,28 @@
         });
 
         // Filter by Category
-        document.getElementById('filterTqam').addEventListener('change', function () {
-            const filteredItems = this.checked ? items.filter(item => item.tqam) : items;
-            renderItems(filteredItems);
-        });
+        function applyFilters() {
+            const filterTqam = document.getElementById('filterTqam').checked;
+            const filterMofradat = document.getElementById('filterMofradat').checked;
+            const filterHalal = document.getElementById('filterHalal').checked;
 
-        document.getElementById('filterMofradat').addEventListener('change', function () {
-            const filteredItems = this.checked ? items.filter(item => item.mofradat) : items;
-            renderItems(filteredItems);
-        });
+            let filteredItems = items;
 
-        document.getElementById('filterHalal').addEventListener('change', function () {
-            const filteredItems = this.checked ? items.filter(item => item.halal) : items;
+            if (filterTqam || filterMofradat || filterHalal) {
+                filteredItems = items.filter(item => {
+                    const matchesTqam = filterTqam ? item.tqam : true;
+                    const matchesMofradat = filterMofradat ? item.mofradat : true;
+                    const matchesHalal = filterHalal ? item.halal : true;
+                    return matchesTqam && matchesMofradat && matchesHalal;
+                });
+            }
+
             renderItems(filteredItems);
-        });
+        }
+
+        document.getElementById('filterTqam').addEventListener('change', applyFilters);
+        document.getElementById('filterMofradat').addEventListener('change', applyFilters);
+        document.getElementById('filterHalal').addEventListener('change', applyFilters);
 
         fetchFirestoreData();
     </script>
